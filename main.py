@@ -17,13 +17,15 @@ class TextRegionCropper:
         # Record start time
         start_time = time.time()
 
-        # Perform OCR to detect text regions
-        ocr_results = self.ocr.ocr(img=img_path, rec=False)
-
         # Load the image using OpenCV
         img = cv2.imread(img_path)
         if img is None:
             return {"error": "Image could not be read"}, 400
+
+        img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        
+        # Perform OCR to detect text regions
+        ocr_results = self.ocr.ocr(img=img_path, rec=False)
 
         # List to hold cropped images
         cropped_images = []
