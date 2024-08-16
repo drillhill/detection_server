@@ -1,2 +1,4 @@
 *.jpg
 __pycache__/
+*.png
+en_PP-OCRv4_rec/*

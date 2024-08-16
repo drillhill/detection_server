@@ -11,7 +11,7 @@ app = FastAPI()
 
 class TextRegionCropper:
     def __init__(self, det_model_dir='det_db_inference', show_log=False):
-        self.ocr = PaddleOCR(det_model_dir=det_model_dir, show_log=show_log,use_gpu=True)
+        self.ocr = PaddleOCR(det_model_dir=det_model_dir, show_log=show_log,use_gpu=False)
 
     async def crop_text_regions(self, img_path: str):
         # Record start time
@@ -23,9 +23,9 @@ class TextRegionCropper:
             return {"error": "Image could not be read"}, 400
 
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        
+        cv2.imwrite(f"rotates.jpg", img)
         # Perform OCR to detect text regions
-        ocr_results = self.ocr.ocr(img=img_path, rec=False)
+        ocr_results = self.ocr.ocr(img=img, rec=False)
 
         # List to hold cropped images
         cropped_images = []
@@ -59,23 +59,25 @@ cropper = TextRegionCropper()
 # Endpoint to process image path
 @app.post("/process_image")
 async def process_image(image_path: str):
-    cropped_images, processing_time = await cropper.crop_text_regions(image_path)
+    try:
+        cropped_images, processing_time = await cropper.crop_text_regions(image_path)
 
-    if isinstance(cropped_images, dict):  # If there's an error in processing
-        return cropped_images
+        if isinstance(cropped_images, dict):  # If there's an error in processing
+            return cropped_images
 
-    # Prepare response
-    response = {
-        "processing_time": f"{processing_time:.2f} seconds",
-        "cropped_images": [f"{img_id}.jpg" for img_id, _ in cropped_images]
-    }
+        # Prepare response
+        response = {
+            "processing_time": f"{processing_time:.2f} seconds",
+            "cropped_images": [f"{img_id}.jpg" for img_id, _ in cropped_images]
+        }
 
-    # Save cropped images
-    for img_id, cropped_img in cropped_images:
-        cv2.imwrite(f"{img_id}.jpg", cropped_img)
+        # Save cropped images
+        for img_id, cropped_img in cropped_images:
+            cv2.imwrite(f"{img_id}.jpg", cropped_img)
 
-    return response
+        return response
+    except: return None
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, log_level="info", workers=1)
+    uvicorn.run("main:app", host="127.0.0.1", port=4009, log_level="info", workers=1)
